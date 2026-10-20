@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: pipeline-${{ github.event.pull_request.number }}
-  cancel-in-progress: true  # the no-cancel variant is a workflow edit on a branch
+  cancel-in-progress: false  # the no-cancel variant is a workflow edit on a branch
 
 jobs:
   changes:
