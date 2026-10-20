@@ -1,1 +1,1 @@
-s6-good
+s6c-push-and-edit
