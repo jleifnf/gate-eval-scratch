@@ -1,0 +1,325 @@
+name: Pipeline
+
+# Scratch platform-behavior experiment (TASK-212 PR 4). SYNTHETIC: no real checks run. The
+# triggers, concurrency group and the `required-gate` job mirror Limenry's pipeline.yml. Each
+# synthetic job reads the LIVE PR body and behaves per a `job.<name>=ok|fail|slow:<seconds>` line.
+
+on:
+  pull_request:
+    branches: [trunk]
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: pipeline-${{ github.event.pull_request.number }}
+  cancel-in-progress: true  # the no-cancel variant is a workflow edit on a branch
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      pr-baseline: "true"
+      data-migration: "false"
+      security-supply-chain: "false"
+      backend-contract: "false"
+      frontend-quality: "false"
+      ai-agent-behavior: "false"
+      staging-promotion: "false"
+      production-release: "false"
+      docs-only: "true"
+    steps:
+      - run: echo "evidence job=changes run=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT}" | tee -a "$GITHUB_STEP_SUMMARY"
+  context:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Behave as the PR body says (live read)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          JOB: context
+        run: |
+          set -euo pipefail
+          body=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.body // ""')
+          digest=$(printf '%s' "$body" | shasum -a 256 | cut -c1-16)
+          mode=$(printf '%s\n' "$body" | sed -n "s/^job\.${JOB}=//p" | head -1)
+          mode=${mode:-ok}
+          {
+            echo "evidence job=${JOB} run=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT} mode=${mode}"
+            echo "evidence head_sha=${{ github.event.pull_request.head.sha }} tested_sha=${GITHUB_SHA} body_sha256=${digest}"
+            echo "evidence started=$(date -u +%FT%TZ)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          case "$mode" in
+            ok) ;;
+            fail) echo "evidence finished=$(date -u +%FT%TZ) result=failure"; exit 1 ;;
+            slow:*) sleep "${mode#slow:}" ;;
+            *) echo "unknown mode"; exit 2 ;;
+          esac
+          echo "evidence finished=$(date -u +%FT%TZ) result=success" | tee -a "$GITHUB_STEP_SUMMARY"
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Behave as the PR body says (live read)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          JOB: api
+        run: |
+          set -euo pipefail
+          body=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.body // ""')
+          digest=$(printf '%s' "$body" | shasum -a 256 | cut -c1-16)
+          mode=$(printf '%s\n' "$body" | sed -n "s/^job\.${JOB}=//p" | head -1)
+          mode=${mode:-ok}
+          {
+            echo "evidence job=${JOB} run=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT} mode=${mode}"
+            echo "evidence head_sha=${{ github.event.pull_request.head.sha }} tested_sha=${GITHUB_SHA} body_sha256=${digest}"
+            echo "evidence started=$(date -u +%FT%TZ)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          case "$mode" in
+            ok) ;;
+            fail) echo "evidence finished=$(date -u +%FT%TZ) result=failure"; exit 1 ;;
+            slow:*) sleep "${mode#slow:}" ;;
+            *) echo "unknown mode"; exit 2 ;;
+          esac
+          echo "evidence finished=$(date -u +%FT%TZ) result=success" | tee -a "$GITHUB_STEP_SUMMARY"
+  db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Behave as the PR body says (live read)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          JOB: db
+        run: |
+          set -euo pipefail
+          body=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.body // ""')
+          digest=$(printf '%s' "$body" | shasum -a 256 | cut -c1-16)
+          mode=$(printf '%s\n' "$body" | sed -n "s/^job\.${JOB}=//p" | head -1)
+          mode=${mode:-ok}
+          {
+            echo "evidence job=${JOB} run=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT} mode=${mode}"
+            echo "evidence head_sha=${{ github.event.pull_request.head.sha }} tested_sha=${GITHUB_SHA} body_sha256=${digest}"
+            echo "evidence started=$(date -u +%FT%TZ)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          case "$mode" in
+            ok) ;;
+            fail) echo "evidence finished=$(date -u +%FT%TZ) result=failure"; exit 1 ;;
+            slow:*) sleep "${mode#slow:}" ;;
+            *) echo "unknown mode"; exit 2 ;;
+          esac
+          echo "evidence finished=$(date -u +%FT%TZ) result=success" | tee -a "$GITHUB_STEP_SUMMARY"
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Behave as the PR body says (live read)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          JOB: web
+        run: |
+          set -euo pipefail
+          body=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.body // ""')
+          digest=$(printf '%s' "$body" | shasum -a 256 | cut -c1-16)
+          mode=$(printf '%s\n' "$body" | sed -n "s/^job\.${JOB}=//p" | head -1)
+          mode=${mode:-ok}
+          {
+            echo "evidence job=${JOB} run=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT} mode=${mode}"
+            echo "evidence head_sha=${{ github.event.pull_request.head.sha }} tested_sha=${GITHUB_SHA} body_sha256=${digest}"
+            echo "evidence started=$(date -u +%FT%TZ)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          case "$mode" in
+            ok) ;;
+            fail) echo "evidence finished=$(date -u +%FT%TZ) result=failure"; exit 1 ;;
+            slow:*) sleep "${mode#slow:}" ;;
+            *) echo "unknown mode"; exit 2 ;;
+          esac
+          echo "evidence finished=$(date -u +%FT%TZ) result=success" | tee -a "$GITHUB_STEP_SUMMARY"
+  scripts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Behave as the PR body says (live read)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          JOB: scripts
+        run: |
+          set -euo pipefail
+          body=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.body // ""')
+          digest=$(printf '%s' "$body" | shasum -a 256 | cut -c1-16)
+          mode=$(printf '%s\n' "$body" | sed -n "s/^job\.${JOB}=//p" | head -1)
+          mode=${mode:-ok}
+          {
+            echo "evidence job=${JOB} run=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT} mode=${mode}"
+            echo "evidence head_sha=${{ github.event.pull_request.head.sha }} tested_sha=${GITHUB_SHA} body_sha256=${digest}"
+            echo "evidence started=$(date -u +%FT%TZ)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          case "$mode" in
+            ok) ;;
+            fail) echo "evidence finished=$(date -u +%FT%TZ) result=failure"; exit 1 ;;
+            slow:*) sleep "${mode#slow:}" ;;
+            *) echo "unknown mode"; exit 2 ;;
+          esac
+          echo "evidence finished=$(date -u +%FT%TZ) result=success" | tee -a "$GITHUB_STEP_SUMMARY"
+  security-scans:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Behave as the PR body says (live read)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          JOB: security-scans
+        run: |
+          set -euo pipefail
+          body=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.body // ""')
+          digest=$(printf '%s' "$body" | shasum -a 256 | cut -c1-16)
+          mode=$(printf '%s\n' "$body" | sed -n "s/^job\.${JOB}=//p" | head -1)
+          mode=${mode:-ok}
+          {
+            echo "evidence job=${JOB} run=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT} mode=${mode}"
+            echo "evidence head_sha=${{ github.event.pull_request.head.sha }} tested_sha=${GITHUB_SHA} body_sha256=${digest}"
+            echo "evidence started=$(date -u +%FT%TZ)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          case "$mode" in
+            ok) ;;
+            fail) echo "evidence finished=$(date -u +%FT%TZ) result=failure"; exit 1 ;;
+            slow:*) sleep "${mode#slow:}" ;;
+            *) echo "unknown mode"; exit 2 ;;
+          esac
+          echo "evidence finished=$(date -u +%FT%TZ) result=success" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  plan-validation:
+    needs: changes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Behave as the PR body says (live read)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          JOB: plan-validation
+        run: |
+          set -euo pipefail
+          body=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.body // ""')
+          digest=$(printf '%s' "$body" | shasum -a 256 | cut -c1-16)
+          mode=$(printf '%s\n' "$body" | sed -n "s/^job\.${JOB}=//p" | head -1)
+          mode=${mode:-ok}
+          {
+            echo "evidence job=${JOB} run=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT} mode=${mode}"
+            echo "evidence head_sha=${{ github.event.pull_request.head.sha }} tested_sha=${GITHUB_SHA} body_sha256=${digest}"
+            echo "evidence started=$(date -u +%FT%TZ)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          case "$mode" in
+            ok) ;;
+            fail) echo "evidence finished=$(date -u +%FT%TZ) result=failure"; exit 1 ;;
+            slow:*) sleep "${mode#slow:}" ;;
+            *) echo "unknown mode"; exit 2 ;;
+          esac
+          echo "evidence finished=$(date -u +%FT%TZ) result=success" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  pr-baseline:
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: read
+    outputs:
+      dependency-scan-agent: ${{ steps.kids.outputs.dependency-scan-agent }}
+      dependency-scan-db: ${{ steps.kids.outputs.dependency-scan-db }}
+      dependency-scan-scripts: ${{ steps.kids.outputs.dependency-scan-scripts }}
+      dependency-scan-web: ${{ steps.kids.outputs.dependency-scan-web }}
+      sbom: ${{ steps.kids.outputs.sbom }}
+      exceptions: ${{ steps.kids.outputs.exceptions }}
+    steps:
+      - id: behave
+        name: Behave as the PR body says (live read)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          JOB: pr-baseline
+        run: |
+          set -euo pipefail
+          body=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.body // ""')
+          digest=$(printf '%s' "$body" | shasum -a 256 | cut -c1-16)
+          mode=$(printf '%s\n' "$body" | sed -n "s/^job\.${JOB}=//p" | head -1)
+          mode=${mode:-ok}
+          {
+            echo "evidence job=${JOB} run=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT} mode=${mode}"
+            echo "evidence head_sha=${{ github.event.pull_request.head.sha }} tested_sha=${GITHUB_SHA} body_sha256=${digest}"
+            echo "evidence started=$(date -u +%FT%TZ)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          case "$mode" in
+            ok) ;;
+            fail) echo "evidence finished=$(date -u +%FT%TZ) result=failure"; echo "mode=fail" >> "$RUNNER_TEMP/mode"; exit 1 ;;
+            slow:*) sleep "${mode#slow:}" ;;
+            *) echo "unknown mode"; exit 2 ;;
+          esac
+          echo "evidence finished=$(date -u +%FT%TZ) result=success" | tee -a "$GITHUB_STEP_SUMMARY"
+      - id: kids
+        if: always()
+        run: |
+          r=success
+          if [ "${{ steps.behave.outcome }}" != "success" ]; then r=failure; fi
+          for c in dependency-scan-agent dependency-scan-db dependency-scan-scripts dependency-scan-web sbom exceptions; do
+            echo "$c=$r" >> "$GITHUB_OUTPUT"
+          done
+
+  required-gate:
+    needs: [changes, context, api, db, web, scripts, security-scans, plan-validation, pr-baseline]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Aggregate the gate results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          body=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.body // ""')
+          digest=$(printf '%s' "$body" | shasum -a 256 | cut -c1-16)
+          {
+            echo "evidence job=required-gate run=${GITHUB_RUN_ID} attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "evidence head_sha=${{ github.event.pull_request.head.sha }} tested_sha=${GITHUB_SHA} body_sha256_at_end=${digest}"
+            echo "evidence started=$(date -u +%FT%TZ)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          python3 scripts/check_required_gate.py
+          rc=$?
+          echo "evidence finished=$(date -u +%FT%TZ) gate_exit=${rc}" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
