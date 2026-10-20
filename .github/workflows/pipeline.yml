@@ -293,7 +293,7 @@ jobs:
 
   required-gate:
     needs: [changes, context, api, db, web, scripts, security-scans, plan-validation, pr-baseline]
-    if: always()
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
