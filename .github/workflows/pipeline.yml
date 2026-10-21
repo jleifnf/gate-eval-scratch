@@ -9,9 +9,6 @@ on:
     branches: [trunk]
     types: [opened, synchronize, reopened, edited]
 
-concurrency:
-  group: pipeline-${{ github.event.pull_request.number }}
-  cancel-in-progress: true  # the no-cancel variant is a workflow edit on a branch
 
 jobs:
   changes:
